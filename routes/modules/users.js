@@ -3,10 +3,12 @@ const express = require('express')
 const router = express.Router()
 
 const passport = require('passport')
+const bcrypt = require('bcryptjs')
 
 // 引用 Todo model
 const db = require('../../models')
 const Todo = db.Todo
+const User = db.User
 
 
 //登入頁面
@@ -28,15 +30,27 @@ router.get('/register', (req, res) => {
 //註冊功能
 router.post('/register', (req, res) => {
   const { name, email, password, confirmPassword } = req.body
+  const errors = []
+  if (!name || !email || !password || !confirmPassword) {
+    errors.push({message: '所有欄位都是必填'})
+  }
+  if (password !== confirmPassword) {
+    errors.push({ message: '密碼與確認密碼不相符' })
+  }
+  if (errors.length) {
+    return res.render('register', {name, email, password, confirmPassword, errors})
+  }
   User.findOne({ where: { email } })
     .then(user => {
       if (user) {
         console.log('User has already exit')
+        errors.push({message: '此信箱已註冊'})
         return res.render('register', {
           name,
           email,
           password,
-          confirmPassword
+          confirmPassword,
+          errors
         })
       }
       return bcrypt
@@ -47,7 +61,10 @@ router.post('/register', (req, res) => {
           email,
           password: hash
         }))
-        .then(user => res.redirect('/'))
+        .then(user => {
+          req.flash('success_msg', '註冊成功')
+          return res.redirect('/users/login')
+        })
         .catch(err => console.log(err))
     })
     .catch(err => console.log(err))
@@ -56,6 +73,7 @@ router.post('/register', (req, res) => {
 //登出功能
 router.get('/logout', (req, res) => {
   req.logout()
+  req.flash('success_msg', '登出成功')
   res.redirect('/users/login')
 })
 
