@@ -55,7 +55,8 @@ router.post('/register', (req, res) => {
 
 //登出功能
 router.get('/logout', (req, res) => {
-  res.send('logout')
+  req.logout()
+  res.redirect('/users/login')
 })
 
 //匯出路由模組
